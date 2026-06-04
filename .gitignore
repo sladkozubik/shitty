@@ -3,5 +3,6 @@
 .env
 __pycache__/
 *.json
-.logs/
+.log
+logs/
 .DS_Store
