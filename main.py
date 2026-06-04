@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
-from logic import current_weather_in_spb, save_json_data
+from logic import current_weather_current_point, save_json_data
 import json
 
 
@@ -27,7 +27,7 @@ async def cmd_start(message: Message):
 async def get_location(message: Message):
     latitude = round(message.location.latitude, 4)
     longitude = round(message.location.longitude, 4)
-    current = current_weather_in_spb(latitude, longitude)
+    current = current_weather_current_point(latitude, longitude)
     if current == None:
         await message.answer("Ошибка получения данных, попробуйте еще раз.")
     else:

@@ -1,7 +1,7 @@
 import requests
 
 
-def current_weather_in_spb(lat: float, lon: float):
+def current_weather_current_point(lat: float, lon: float):
     url = "https://api.open-meteo.com/v1/forecast"
 
     params = {
