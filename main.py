@@ -1,14 +1,12 @@
 import asyncio
 import os
-from importlib.metadata import version
-
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
 from logic import current_weather_in_spb, save_json_data
 
-load_dotenv()
+load_dotenv('.env')
 
 
 dp = Dispatcher()
@@ -31,7 +29,12 @@ async def get_location(message: Message):
     longitude = round(message.location.longitude,4)
     current = current_weather_in_spb(latitude, longitude)
     await message.answer(f"Погода в регионе: {current}°C ")
-    print('handler weather works')
+    user = message.from_user
+    print(
+        f"{user.id} @{user.username or 'no_username'} использовал геопозицию:\n"
+        f"lat: {message.location.latitude}\n"
+        f"lon: {message.location.longitude}"
+    )
 
 
 @dp.message(F.text =="Поделиться данными")

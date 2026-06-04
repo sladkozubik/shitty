@@ -1,9 +1,7 @@
-import json
 
 import requests
-from pprint import pprint
 
-def current_weather_in_spb(lat, lon):
+def current_weather_in_spb(lat: float, lon: float):
 
     url = "https://api.open-meteo.com/v1/forecast"
 
@@ -21,7 +19,7 @@ def current_weather_in_spb(lat, lon):
         temp = data["current"]["temperature_2m"]
         return temp
     else:
-        return "Нет ответа от сервера"
+        return "Сервер не отвечает"
 
 def save_json_data(json_data: str, user_id: int):
 
