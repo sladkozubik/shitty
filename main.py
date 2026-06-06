@@ -25,21 +25,25 @@ async def get_location(message: Message):
     latitude = round(location.latitude, 4)
     longitude = round(location.longitude, 4)
     c_temp, c_wind, c_humidity = fetch_current_weather(latitude, longitude)
+    data = {
+        "temperature": c_temp,
+        "wind": c_wind,
+        "humidity": c_humidity,
+    }
     if None in (c_temp, c_wind, c_humidity):
-        data = {
-            "temperature": c_temp,
-            "wind": c_wind,
-            "humidity": c_humidity,
-        }
+
         failed = [name for name, value in data.items() if value is None]
         await message.answer(f"Ошибка в обработке данных. Обратобать не удалось: {failed}")
 
 
     else:
         try:
-            await message.answer(f"Погода в регионе: {c_temp}°C ")
-            await message.answer(f'Скорость ветра: {c_wind} м/с')
-            await message.answer(f'Относительная влажность: {c_humidity}%')
+            await message.answer(
+                f"Погода в регионе:\n"
+                f"Температура: {c_temp}°C\n"
+                f"Скорость ветра: {c_wind} м/с\n"
+                f"Относительная влажность: {c_humidity}%"
+            )
         except Exception as e:
             print(f'telegram error: {e}')
     user = message.from_user
@@ -63,7 +67,9 @@ async def register_message(message: Message):
     print(temp)
 
     save_json_data(temp, message.from_user.id)
-    await message.answer("Откройте контекстное меню рядом с полем ввода сообщения")
+    await message.answer(
+        "Откройте контекстное меню рядом с полем ввода сообщения\n"
+        "или выберите точку на карте с помощью встроенного инструмента Telegram.")
     print('handler random text works')
 
 
