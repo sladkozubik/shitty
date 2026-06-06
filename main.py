@@ -4,64 +4,65 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
-from logic import current_weather_current_point, save_json_data
+from logic import fetch_current_weather, save_json_data
 import json
-
 
 load_dotenv('.env')
 
 dp = Dispatcher()
 
-#хендлер, сратабывающий на /start. Создает две кнопки на месте ввода текста
+
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
-    kb = [[types.KeyboardButton(text="Погода", request_location=True)],
-          [types.KeyboardButton(text='Поделиться данными')]]
+    kb = [[types.KeyboardButton(text="Погода", request_location=True)]]
     keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
     await message.answer("Нажмите кнопку ниже:", reply_markup=keyboard)
 
-'''хендлер, срабатывающий на получение локации.
-    можно поделиться своей локацией, нажав на кнопку 'Погода',
-     либо выбрать точку вручную с помощью встроенных инструментов телеги'''
+
 @dp.message(F.location)
 async def get_location(message: Message):
-    latitude = round(message.location.latitude, 4)
-    longitude = round(message.location.longitude, 4)
-    current = current_weather_current_point(latitude, longitude)
-    if current == None:
-        await message.answer("Ошибка получения данных, попробуйте еще раз.")
+    location = message.location
+    latitude = round(location.latitude, 4)
+    longitude = round(location.longitude, 4)
+    c_temp, c_wind, c_humidity = fetch_current_weather(latitude, longitude)
+    if None in (c_temp, c_wind, c_humidity):
+        data = {
+            "temperature": c_temp,
+            "wind": c_wind,
+            "humidity": c_humidity,
+        }
+        failed = [name for name, value in data.items() if value is None]
+        await message.answer(f"Ошибка в обработке данных. Обратобать не удалось: {failed}")
+
+
     else:
         try:
-            await message.answer(f"Погода в регионе: {current}°C ")
+            await message.answer(f"Погода в регионе: {c_temp}°C ")
+            await message.answer(f'Скорость ветра: {c_wind} м/с')
+            await message.answer(f'Относительная влажность: {c_humidity}%')
         except Exception as e:
             print(f'telegram error: {e}')
     user = message.from_user
 
-    result =(f"{user.id} @{user.username or 'no_username'} использовал геопозицию:\n"
-             f"lat: {message.location.latitude}\n"
-             f"lon: {message.location.longitude}\n\n")
+    result = (f"{user.id} @{user.username or 'no_username'} использовал геопозицию:\n"
+              f"lat: {message.location.latitude}\n"
+              f"lon: {message.location.longitude}\n\n")
     print(result)
     os.makedirs("logs", exist_ok=True)
     with open(
-        f"./logs/{message.from_user.id}.log","a", encoding="utf-8" ) as f:
+            f"./logs/{message.from_user.id}.log", "a", encoding="utf-8") as f:
         f.write(result)
-
-
-@dp.message(F.text == "Поделиться данными")
-async def get_message_dump(message: Message):
-    userid = message.from_user.id
-    print(userid)
-    temp =json.dumps({'id':userid,
-                      'text':message.text}, indent=4, ensure_ascii=False
-                     )
-    print(temp)
-
-    save_json_data(temp, userid)
-    print('handler data works')
 
 
 @dp.message()
 async def register_message(message: Message):
+    temp = json.dumps({'id': message.from_user.id,
+                       'nickname': message.from_user.username or 'no_username',
+                       'text': message.text}, indent=4, ensure_ascii=False
+                      )
+    print(temp)
+
+    save_json_data(temp, message.from_user.id)
     await message.answer("Откройте контекстное меню рядом с полем ввода сообщения")
     print('handler random text works')
 
