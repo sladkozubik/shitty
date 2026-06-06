@@ -1,11 +1,10 @@
-import asyncio
-import os
+import os, asyncio, json
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
-from logic import fetch_current_weather, save_json_data
-import json
+from logic import save_json_data, get_weather, save_call
+
 
 load_dotenv('.env')
 
@@ -22,51 +21,26 @@ async def cmd_start(message: Message):
 @dp.message(F.location)
 async def get_location(message: Message):
     location = message.location
+
     latitude = round(location.latitude, 4)
     longitude = round(location.longitude, 4)
-    c_temp, c_wind, c_humidity = fetch_current_weather(latitude, longitude)
-    data = {
-        "temperature": c_temp,
-        "wind": c_wind,
-        "humidity": c_humidity,
-    }
-    if None in (c_temp, c_wind, c_humidity):
 
-        failed = [name for name, value in data.items() if value is None]
-        await message.answer(f"Ошибка в обработке данных. Обратобать не удалось: {failed}")
+    result = get_weather(latitude, longitude)
 
+    save_call(message)
 
-    else:
-        try:
-            await message.answer(
-                f"Погода в регионе:\n"
-                f"Температура: {c_temp}°C\n"
-                f"Скорость ветра: {c_wind} м/с\n"
-                f"Относительная влажность: {c_humidity}%"
-            )
-        except Exception as e:
-            print(f'telegram error: {e}')
-    user = message.from_user
-
-    result = (f"{user.id} @{user.username or 'no_username'} использовал геопозицию:\n"
-              f"lat: {message.location.latitude}\n"
-              f"lon: {message.location.longitude}\n\n")
-    print(result)
-    os.makedirs("logs", exist_ok=True)
-    with open(
-            f"./logs/{message.from_user.id}.log", "a", encoding="utf-8") as f:
-        f.write(result)
+    await message.answer(result)
 
 
 @dp.message()
 async def register_message(message: Message):
-    temp = json.dumps({'id': message.from_user.id,
-                       'nickname': message.from_user.username or 'no_username',
-                       'text': message.text}, indent=4, ensure_ascii=False
-                      )
-    print(temp)
+    data = {'id': message.from_user.id,
+            'nickname': message.from_user.username or 'no_username',
+            'text': message.text
+            }
+    print(data)
 
-    save_json_data(temp, message.from_user.id)
+    save_json_data(data, message.from_user.id)
     await message.answer(
         "Откройте контекстное меню рядом с полем ввода сообщения\n"
         "или выберите точку на карте с помощью встроенного инструмента Telegram.")
